@@ -32,6 +32,7 @@ class Environment(gym.Env):
         self.observation_space = gym.spaces.Box(low=0, high=100, shape=(self.map.get_space_size() + 6,), dtype=np.float32)
 
 
+    #Resets game. Can set if the game is displayed, and if the start is preset or not. 
     def reset(self, display=True, rand_start=False):
         if display:
             self.display_sim = True
@@ -57,6 +58,7 @@ class Environment(gym.Env):
         if on_target: #Reward if on target
             self.done = True
             reward = 100
+            
         else: #Reward based on tile_distance
             smoothed_dist, _ = self.map.get_smoothed_distance(int(self.actor.y),int(self.actor.x))
             self.actor.smoothed_distances.append(smoothed_dist)

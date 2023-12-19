@@ -4,6 +4,21 @@ from Brain import *
 import random
 import matplotlib.pyplot as plt
 
+class GraphTool():
+    def __init__(self, name):
+        self.name = name
+        self.data = []
+
+    def push(self, datum):
+        self.data.append(datum)
+
+    def plot(self, y_label, x_label="Episodes"):
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.data)
+        plt.xlabel("Episode")
+        plt.ylabel("Average Reward")
+        plt.title("Average Reward vs Episode")
+        plt.show()
 
 def run_as_player():
     env = Environment()
@@ -116,25 +131,6 @@ def train_on_game():
     plt.show()
 
 
-
-train_on_game()
-
+run_as_player()
 
 
-
-
-class GraphTool():
-    def __init__(self, name):
-        self.name = name
-        self.data = []
-
-    def push(self, datum):
-        self.data.append(datum)
-
-    def plot(self, y_label, x_label="Episodes"):
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.data)
-        plt.xlabel("Episode")
-        plt.ylabel("Average Reward")
-        plt.title("Average Reward vs Episode")
-        plt.show()

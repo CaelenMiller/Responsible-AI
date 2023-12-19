@@ -24,6 +24,7 @@ class Map:
         self.distance_map = self.generate_distance_map()
         self.max_dist = self.distance_map.flatten()[np.isfinite(self.distance_map.flatten())].max()
 
+    #Uses a matrix to generate a map 
     def generate_map(self, tile_matrix):
         self.walls = []
         self.tile_size_x = 100
@@ -61,6 +62,7 @@ class Map:
     def get_space_size(self):
         return len(self.tile_matrix) * len(self.tile_matrix[0])
     
+    #Fetches a minimap centered on the actor. If r=2, minimap is a 5x5 tilemap
     def get_local_map(self, x, y, r): #x and y are true coords
         map_x, map_y = x // self.tile_size_x, y // self.tile_size_y
         cols, rows = self.tile_matrix.shape
@@ -77,6 +79,7 @@ class Map:
                     
         return vision
     
+    #Selects a random walkable location from the full map
     def random_valid_location(self):
         # Find the indices of zeros in the 2D array
         zero_indices = np.argwhere(self.tile_matrix == 0)
@@ -85,6 +88,8 @@ class Map:
         random_index = random.choice(zero_indices)
         return (random_index[1]+1/2) * self.tile_size_x, (random_index[0]+1/2) * self.tile_size_y
     
+    #Performs BFS to generate map of integer distances from goal. AKA, number of tiles that must be crossed from
+    #each tile in order to reach the closest goal. 
     def generate_distance_map(self):
         rows, cols = self.tile_matrix.shape
         distance_map = np.full((rows, cols), np.inf)  # Initialize with infinite distance
@@ -115,6 +120,8 @@ class Map:
 
         return distance_map
     
+
+    #Gets a real valued distance from goal, using the distance map
     def get_smoothed_distance(self, x, y): #x and y are in continous coord
         dis_x, dis_y = y//100, x//100
         cur_distance = self.distance_map[dis_y][dis_x]
