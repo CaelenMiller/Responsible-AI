@@ -11,7 +11,7 @@ class Display:
         self.WALLS = (0,205,255)
         self.camera = Camera()
 
-        self.walkable = Env_Object(0, 0, 100 * map.size[0], 100 * map.size[1], obj_type="background")
+        self.walkable = Env_Object(0, 0, 100 * len(map.tile_matrix[0]), 100 * len(map.tile_matrix), obj_type="background")
 
 
     def render(self, entities, mini_map = [], info=[]):

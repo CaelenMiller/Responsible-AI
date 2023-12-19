@@ -5,8 +5,11 @@ import random
 import matplotlib.pyplot as plt
 
 
-
-
+def run_as_player():
+    env = Environment()
+    done = False
+    while not done:
+        state, rewards, done = env.step()
 
 def train_on_game():
     # Initialize environment and agents
@@ -112,13 +115,11 @@ def train_on_game():
     plt.title("Average Reward vs Episode")
     plt.show()
 
-    
 
-#train_on_game()
-env = Environment()
-done = False
-while not done:
-    state, rewards, done = env.step()
+
+train_on_game()
+
+
 
 
 
