@@ -62,37 +62,19 @@ class Environment(gym.Env):
 
         if on_target:  # Reward if on target
             self.done = True
-            reward = 100
+            # reward = 100
         else:  # Reward based on tile_distance
             smoothed_dist, _ = self.map.get_smoothed_distance(
                 int(self.actor.y), int(self.actor.x)
             )
             self.actor.smoothed_distances.append(smoothed_dist)
-            reward = self.actor.compare_smooth_distances() * 50
+            reward = self.actor.compare_smooth_distances()
+            reward += 100 + 1/smoothed_dist
             # reward = (self.map.max_dist - (reward / 100)) * 5 / self.map.max_dist
 
-        # if self.actor.time_still > 0: #Reward for moving
-        #    reward -= min((self.actor.time_still/200) ** 2 , 5)
-
-        # reward for pointing in the right direction. Not continuous to combat weird rotating behavior
-        # angle_rewards = [4,2,1,0,-1,-2,-4]
-        # diff = min(abs(direction - self.actor.angle_deg), 360 - abs(direction - self.actor.angle_deg))
-        # reward += angle_rewards[int(diff//29)] / 6
-        # reward += (4 - min(abs(direction - self.actor.angle_deg), 360 - abs(direction - self.actor.angle_deg))//30)/4
-
         # reward for moving away from current position
-        # if len(self.actor.comp_positions) > self.actor.minimum_pos:
-        #    reward += min(self.actor.compare_positions() - 1, 0)
-
-        # reward for turning
-        # if len(self.actor.comp_angles) > self.actor.minimum_pos:
-        #     reward += self.actor.compare_angles() * 5
-
-        # if len(self.actor.comp_distance) > self.actor.minimum_pos:
-        #    reward += self.actor.compare_distances()
-
-        # if reward > 0:
-        #    reward *= reward_scale
+        if len(self.actor.comp_positions) > self.actor.minimum_pos:
+           reward += 5 * (min(self.actor.compare_positions() - 1, 0))
 
         return torch.from_numpy(np.array([reward]))
 

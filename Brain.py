@@ -133,7 +133,7 @@ class DQN(nn.Module):
         x = F.leaky_relu(self.conv1(spatial_state))
         x = F.leaky_relu(self.conv2(x))
 
-        # # Flatten
+        # Flatten
         x = x.view(x.size(0), -1)
 
         # Concatenate with non-spatial state

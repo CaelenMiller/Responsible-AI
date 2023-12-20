@@ -84,7 +84,7 @@ class Map:
             else:
                 if distance < min_distance:
                     min_distance = distance
-
+        # min_distance to a target and angle_deg is degrees to the
         return False, min_distance, angle_deg
 
     def get_space_size(self):
@@ -117,6 +117,7 @@ class Map:
         ) * self.tile_size_y
 
     def generate_distance_map(self):
+        # Gets number of tiles away from the goal
         rows, cols = self.tile_matrix.shape
         distance_map = np.full(
             (rows, cols), np.inf
@@ -151,7 +152,8 @@ class Map:
 
         return distance_map
 
-    def get_smoothed_distance(self, x, y):  # x and y are in continous coord
+    def get_smoothed_distance(self, x, y):  # x and y are in continuous coord
+        # gets the distance from nearest goal
         dis_x, dis_y = y // 100, x // 100
         cur_distance = self.distance_map[dis_y][dis_x]
         smoothed_distance = cur_distance * 100
