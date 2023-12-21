@@ -41,7 +41,7 @@ def train_on_game():
                                                                 [1,1,1,1,1,1,1,1,1,1,1,1,1]]))
 
     # Training settings
-    num_episodes = 500
+    num_episodes = 5000
     batch_size = 128
 
     epsilon_start = 0.95

@@ -66,7 +66,7 @@ class Environment(gym.Env):
             reward = self.actor.compare_smooth_distances() * 10
             #reward = (self.map.max_dist - (reward / 100)) * 5 / self.map.max_dist
             
-            
+        reward -= self.actor.time_still/1500
 
         if self.actor.time_still > 150: #Ends the run if stuck for 150 frames
             self.done = True
@@ -79,8 +79,8 @@ class Environment(gym.Env):
         #reward += (4 - min(abs(direction - self.actor.angle_deg), 360 - abs(direction - self.actor.angle_deg))//30)/4
 
         #reward for moving away from current position
-        #if len(self.actor.comp_positions) > self.actor.minimum_pos:
-        #    reward += min(self.actor.compare_positions() - 1, 0)
+        if len(self.actor.comp_positions) > self.actor.minimum_pos:
+            reward += min(max(self.actor.compare_positions() - 0.2, -0.15), 0.05)
 
         #reward for turning
         # if len(self.actor.comp_angles) > self.actor.minimum_pos:
