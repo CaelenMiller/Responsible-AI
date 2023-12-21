@@ -24,7 +24,7 @@ class Environment(gym.Env):
         self.display = Display(self.map)
 
         self.clock = pygame.time.Clock()
-        self.FPS = 75
+        self.FPS = 60
         self.max_time = max_time
 
         # Define action and observation space
@@ -112,6 +112,7 @@ class Environment(gym.Env):
                                 [f'({round(self.actor.x, 3)}, {round(self.actor.y, 3)})',\
                                 f'({round(self.actor.dx, 3)}, {round(self.actor.dy, 3)})',\
                                 f'Time:  {self.time}',\
+                                f'Time Still:  {self.actor.time_still}',\
                                 f'Reward:  {round(float(self.get_reward()), 3)}',\
                                 f'Angle:  {self.actor.angle_deg}',\
                                 f'Target Angle:  {direction}',\

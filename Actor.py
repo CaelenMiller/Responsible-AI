@@ -25,6 +25,7 @@ class Actor():
         self.dx, self.dy = 0, 0
 
         self.last_action = [False,False,False] #for info purposes
+        self.last_x, self.last_y = self.x, self.y
         self.time_still = 0
         self.minimum_pos = 15
         self.comp_positions = deque(maxlen=30) #records last 30 positions
@@ -60,12 +61,15 @@ class Actor():
         self.apply_friction()
         self.comp_positions.append((self.x, self.y))
         self.comp_angles.append(self.angle_deg)
-
-    def get_state(self):
-        if self.velocity == 0:
+        if self.last_x == self.x and self.last_y == self.y:
             self.time_still += 1
         else:
             self.time_still = 0
+
+        self.last_x = self.x
+        self.last_y = self.y
+
+    def get_state(self):
         return [self.x/100, self.y/100, self.velocity, self.angle_deg/360, self.dx, self.dy]
 
 
