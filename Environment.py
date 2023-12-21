@@ -24,7 +24,7 @@ class Environment(gym.Env):
         self.display = Display(self.map)
 
         self.clock = pygame.time.Clock()
-        self.FPS = 60
+        self.FPS = 75
         self.max_time = max_time
 
         # Define action and observation space
@@ -62,13 +62,15 @@ class Environment(gym.Env):
         else: #Reward based on tile_distance
             smoothed_dist, _ = self.map.get_smoothed_distance(int(self.actor.y),int(self.actor.x))
             self.actor.smoothed_distances.append(smoothed_dist)
-            reward = self.actor.compare_smooth_distances()
+            #print(f' {self.map.distance_map[int(self.actor.y//100)][int(self.actor.x//100)]}: {smoothed_dist}')
+            reward = self.actor.compare_smooth_distances() * 10
             #reward = (self.map.max_dist - (reward / 100)) * 5 / self.map.max_dist
             
             
 
-        #if self.actor.time_still > 0: #Reward for moving
-        #    reward -= min((self.actor.time_still/200) ** 2 , 5)
+        if self.actor.time_still > 150: #Ends the run if stuck for 150 frames
+            self.done = True
+            #reward -= min((self.actor.time_still/200) ** 2 , 5)
 
         #reward for pointing in the right direction. Not continous to combat weird rotating behavior
         # angle_rewards = [4,2,1,0,-1,-2,-4]

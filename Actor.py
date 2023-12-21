@@ -9,7 +9,7 @@ x_k+1 = delta x is the change in location and some kind of internal stuff?
 u_k = current situation
 y_k = current location'''
 class Actor():
-    def __init__(self, brain=None, cords = [50,50], radius=20, color = (255,25, 70), top_speed=10.0, rot_velocity = 3, acceleration=1):
+    def __init__(self, brain=None, cords = [150,150], radius=20, color = (255,25, 70), top_speed=10.0, rot_velocity = 3, acceleration=1):
 
         self.brain = brain
 

@@ -5,16 +5,16 @@ from collections import deque
 import random
 
 class Map:
-    def __init__(self, size = [700,700], tile_matrix=np.array([[0,0,0,1,0,0,0,1,1,1,1,1,0],
-                                            [0,0,0,0,0,0,0,0,0,0,0,1,0],
-                                            [0,0,0,0,0,0,0,0,0,0,0,0,0],
-                                            [1,1,1,1,1,1,1,1,1,1,1,1,0],
-                                            [1,1,1,1,1,1,1,1,1,1,1,1,0],
-                                            [0,0,0,0,0,1,0,0,0,1,0,0,0],
-                                            [1,1,0,0,0,1,1,1,0,1,1,0,0],
-                                            [1,0,0,0,0,0,0,1,0,1,0,0,0],
-                                            [1,0,0,2,0,1,0,1,0,0,0,1,0],
-                                            [1,1,0,0,0,1,0,0,0,1,0,1,0]])):
+    def __init__(self, size = [700,700], tile_matrix=np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1],
+                                                                [1,0,1,1,1,1,0,1,1,1,0,0,1],
+                                                                [1,0,0,0,0,0,0,0,0,1,0,0,1],
+                                                                [1,1,1,1,0,1,1,1,0,1,0,0,1],
+                                                                [1,1,1,1,1,1,0,1,0,1,0,0,1],
+                                                                [1,1,1,1,1,1,0,1,0,1,0,0,1],
+                                                                [1,0,0,0,0,0,0,0,0,1,0,0,1],
+                                                                [1,0,0,1,1,1,1,1,0,1,0,0,1],
+                                                                [1,2,0,0,0,0,0,0,0,0,0,0,1],
+                                                                [1,1,1,1,1,1,1,1,1,1,1,1,1]])):
         self.size=size
         self.tile_matrix=tile_matrix
         self.walls = []
@@ -22,6 +22,7 @@ class Map:
         self.spawns = []
         self.generate_map(tile_matrix)
         self.distance_map = self.generate_distance_map()
+        print(self.distance_map)
         self.max_dist = self.distance_map.flatten()[np.isfinite(self.distance_map.flatten())].max()
 
     #Uses a matrix to generate a map 
@@ -120,54 +121,46 @@ class Map:
 
         return distance_map
     
-
     #Gets a real valued distance from goal, using the distance map
-    def get_smoothed_distance(self, x, y): #x and y are in continous coord
-        dis_x, dis_y = y//100, x//100
-        cur_distance = self.distance_map[dis_y][dis_x]
-        smoothed_distance = cur_distance * 100
+    def get_smoothed_distance(self, y, x): #x and y are in continous coord, get converted to int cords
+        tile_x, tile_y = x//100, y//100
+        cur_distance = self.distance_map[tile_y][tile_x]
+        smoothed_distance = cur_distance
 
-        #figure out which direction is correct
-        above = (max(dis_y-1, 0), dis_x)
-        below = (min(dis_y+1, len(self.tile_matrix)-1), dis_x)
-        left = (dis_y, max(dis_x-1, 0))
-        right = (dis_y, min(dis_x+1, len(self.tile_matrix[0])-1))
+        #Get the tile coords of each of the directions. Force them to be in bounds
+        dir = {"up" : (max(tile_y-1, 0), tile_x),
+                    "down" : (min(tile_y+1, len(self.tile_matrix)-1), tile_x),
+                    "left" : (tile_y, max(tile_x-1, 0)),
+                    "right" : (tile_y, min(tile_x+1, len(self.tile_matrix[0])-1))}
 
-        directions = {"below" : cur_distance < self.distance_map[above[0]][above[1]],
-                      "above" : cur_distance < self.distance_map[below[0]][below[1]],
-                      "left"  : cur_distance < self.distance_map[left[0]][left[1]],
-                      "right" : cur_distance < self.distance_map[right[0]][right[1]]}
-
-        y_offset = y - (dis_y * 100 + 50)
-        x_offset = x - (dis_x * 100 + 50)
-        
-        
-        if y_offset > 0:
-            if directions["below"]:
-                smoothed_distance -= y_offset
-            else:
-                smoothed_distance += y_offset
+        #Dictionary. Key is which direction, Value is if it is the right way. Treats walls and the wrong way the same
+        direction_values = {"up" : cur_distance > self.distance_map[dir["up"][0]][dir["up"][1]],
+                      "down" : cur_distance > self.distance_map[dir["down"][0]][dir["down"][1]],
+                      "left"  : cur_distance > self.distance_map[dir["left"][0]][dir["left"][1]],
+                      "right" : cur_distance > self.distance_map[dir["right"][0]][dir["right"][1]]}
         
 
-        if y_offset < 0:
-            if directions["above"]:
-                smoothed_distance += y_offset
-            else:
-                smoothed_distance -= y_offset
+        #subtract the center of current tile from the actual position. 
+        y_offset = y/100 - (tile_y + 0.5)#negative y is above center, negative x is left of center
+        x_offset = x/100 - (tile_x + 0.5)#0.5 gets us to the center of the current tile
 
-        if x_offset > 0:
-            if directions["right"]:
-                smoothed_distance -= x_offset
-            else:
-                smoothed_distance += x_offset
+        current_side_y = "up" if y_offset < 0 else "down"
+        current_side_x = "left" if x_offset < 0 else "right"
 
-        if x_offset < 0:
-            if directions["left"]:
-                smoothed_distance += x_offset
-            else:
-                smoothed_distance -= x_offset
+        if direction_values[current_side_y]: #we're on the correct vertical side
+            smoothed_distance -= abs(y_offset)
+        else:
+            if not (direction_values["left"] and direction_values["right"]):
+                smoothed_distance += abs(y_offset)
 
-        return smoothed_distance, directions
+        if direction_values[current_side_x]: #we're on the correct horizontal side
+            smoothed_distance -= abs(x_offset)
+        else:
+            smoothed_distance += abs(x_offset)
+
+        #print(f'{cur_distance} : {smoothed_distance} - up: {direction_values["up"]}, down: {direction_values["down"]}, left: {direction_values["left"]}, right: {direction_values["right"]}')
+
+        return smoothed_distance, direction_values
 
 
 
