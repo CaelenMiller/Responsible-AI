@@ -69,7 +69,7 @@ class Environment(gym.Env):
         reward -= self.actor.time_still/1500
 
         if self.actor.time_still > 150: #Ends the run if stuck for 150 frames
-            self.done = True
+            self.time = self.max_time
             #reward -= min((self.actor.time_still/200) ** 2 , 5)
 
         #reward for pointing in the right direction. Not continous to combat weird rotating behavior
