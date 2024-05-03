@@ -1,5 +1,6 @@
 from pygame.locals import *
 import pygame
+import numpy as np
 
 
 class Display:
@@ -14,7 +15,7 @@ class Display:
         self.walkable = Env_Object(0, 0, 100 * len(map.tile_matrix[0]), 100 * len(map.tile_matrix), obj_type="background")
 
 
-    def render(self, entities, mini_map = [], info=[]):
+    def render(self, entities, mini_map = [], info=[], pause_menu=None):
             self.WINDOW.fill(self.WALLS)
             self.walkable.render(self.WINDOW, self.camera)
             for entity in entities:
@@ -22,6 +23,10 @@ class Display:
             if len(mini_map) > 0:
                 self.draw_mini_map(mini_map)
             self.draw_text(info, self.WIDTH-20, 20)
+
+            if pause_menu is not None:
+                pygame.draw.rect(self.WINDOW, pause_menu.color, pause_menu.rect)
+                self.draw_text(["Environment Paused"], pause_menu.rect.x + 120, pause_menu.rect.y + 10)
             pygame.display.update()
 
     def draw_text(self, text, x, y, font_size=20, color=(255, 255, 255)):
@@ -40,7 +45,6 @@ class Display:
         
             # Draw the text on screen
             self.WINDOW.blit(text_surface, text_rect)
-
 
     def draw_mini_map(self, mini_map):
         # Define your colors
@@ -84,6 +88,28 @@ class Display:
     def adjust_camera(self, x, y):
         self.camera.adjust(x - self.WIDTH//2, y - self.HEIGHT//2)
 
+    def get_screen(self, sample = [28, 28]): 
+        pixels = pygame.surfarray.array3d(self.WINDOW)
+        pixels = pixels.transpose([1, 0, 2])
+
+        # Convert to grayscale
+        weights = np.array([0.2989, 0.5870, 0.1140])
+        gray_pixels = np.dot(pixels[...,:3], weights)
+
+        # Downsample the image to 70x70
+        # This is a simple subsampling, not the best method for downsampling
+        h, w = gray_pixels.shape
+        new_height, new_width = sample[0], sample[1]
+        # Compute the step size for rows and columns
+        row_step = int(np.ceil(h / new_height))
+        col_step = int(np.ceil(w / new_width))
+        # Downsample using slicing
+        downsampled = gray_pixels[::row_step, ::col_step]
+
+        # If you want to make sure the downsampled image is exactly 70x70
+        downsampled = downsampled[:new_height, :new_width]
+
+        return downsampled
 
 class Camera():
     def __init__(self):
@@ -96,7 +122,6 @@ class Camera():
     def adjust(self, x, y):
         self.xdif = -x
         self.ydif = -y
-
 
 class Env_Object:
     def __init__(self, minx, miny, dimx, dimy, obj_type="wall"):
@@ -130,4 +155,3 @@ class Env_Object:
     
     def __str__(self) -> str:
         return f"({self.obj_type}: {self.rect})"
-

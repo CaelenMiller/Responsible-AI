@@ -31,23 +31,25 @@ class Actor():
         self.comp_positions = deque(maxlen=30) #records last 30 positions
         self.comp_angles= deque(maxlen=30) #records last 30 angles
         self.comp_distance = deque(maxlen=30) #records last 30 distances
-        self.smoothed_distances = deque(maxlen=5) # last 5 smoothed distance
+        self.smoothed_distances = deque(maxlen=3) # last 2 smoothed distance
 
 
-    def apply_inputs(self, forward, r_left, r_right):
-        if forward:
-            self.velocity = min(self.velocity + self.acceleration, self.top_speed)
-        if r_left:
-            self.angle_deg += self.rot_velocity
-        if r_right:
-            self.angle_deg -= self.rot_velocity
+    def apply_inputs(self, forward, Lrotation, Rrotation): # forward is between 0 and 1, rotation is between -1 (right) and 1 (left)
+        clipped_forward = max(0, min(1, forward))
+        clipped_Lrotation = max(0, min(1, Lrotation))
+        clipped_Rrotation = max(0, min(1, Rrotation))
+        self.velocity = min(self.velocity + self.acceleration * clipped_forward, self.top_speed)
+        self.angle_deg += self.rot_velocity * clipped_Lrotation
+        self.angle_deg -= self.rot_velocity * clipped_Rrotation
+
+        #print(f'{round(clipped_forward,2)}, {round(clipped_Lrotation,2)}, {round(clipped_Rrotation,2)}')
 
         self.angle_deg %= 360
 
         self.dx = self.velocity * math.cos(math.radians(self.angle_deg))
         self.dy = self.velocity * math.sin(math.radians(self.angle_deg))
 
-        self.last_action = [int(forward), int(r_left), int(r_right)]
+        self.last_action = [float(clipped_forward), float(clipped_Lrotation), float(clipped_Rrotation)]
 
 
     def apply_friction(self):
@@ -69,7 +71,7 @@ class Actor():
         self.last_x = self.x
         self.last_y = self.y
 
-    def get_state(self):
+    def get_state(self): #x, y, x in tile, y in tile, velocity, angle, dx, dy
         return [self.x/100, self.y/100, self.velocity, self.angle_deg/360, self.dx, self.dy]
 
 
@@ -80,7 +82,7 @@ class Actor():
             else:
                 outputs = self.brain.explore().reshape(3,-1)  
         else:
-            outputs = inputs
+            outputs = inputs # if it has not brain, nothing changes
         return outputs
 
 
@@ -98,8 +100,8 @@ class Actor():
         end_y = adj_y - math.sin(angle_in_radians) * self.radius
         pygame.draw.line(window, (0,0,0), (adj_x, adj_y), (end_x, end_y), 3)
 
-    def learn(self, memory, reward = False, gamma=0.99):
-        self.brain.learn(memory, reward, gamma)
+    def learn(self, memory, iterations): #TODO - consider if gamma should be passed into here
+        return self.brain.learn(memory, iterations)
 
     def compare_positions(self): #distance between current position and oldest stored position
         return math.sqrt((self.x - self.comp_positions[0][0])**2 + (self.y - self.comp_positions[0][1])**2)

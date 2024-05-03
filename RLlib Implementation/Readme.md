@@ -1,0 +1,2 @@
+# RLlib implementation
+The purpose of this folder was to explore RLlib for use in this project. All of the basic functionalities from [Original] are here, with some additional modifications. Unfortunately, I ran into two main problems: the model had a bizarre bug that was internal to the framework, and it proved extremely difficult to use custom loss. As such, I decided to shift over to [Simplification]. The key differences between the implementations here and in that folder are discussed in its Readme.md. 

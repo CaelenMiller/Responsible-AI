@@ -5,31 +5,32 @@ from collections import deque
 import random
 
 class Map:
-    def __init__(self, size = [700,700], tile_matrix=np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1],
-                                                                [1,0,1,1,1,1,0,1,1,1,0,0,1],
-                                                                [1,0,0,0,0,0,0,0,0,1,0,0,1],
-                                                                [1,1,1,1,0,1,1,1,0,1,0,0,1],
-                                                                [1,1,1,1,1,1,0,1,0,1,0,0,1],
-                                                                [1,1,1,1,1,1,0,1,0,1,0,0,1],
-                                                                [1,0,0,0,0,0,0,0,0,1,0,0,1],
-                                                                [1,0,0,1,1,1,1,1,0,1,0,0,1],
-                                                                [1,2,0,0,0,0,0,0,0,0,0,0,1],
+    def __init__(self, size = [784,784], tile_matrix=np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1],
+                                                                [1,0,1,1,1,1,0,1,1,1,1,1,1],
+                                                                [1,0,0,0,0,0,0,0,0,1,1,1,1],
+                                                                [1,1,0,1,1,1,1,1,0,1,1,1,1],
+                                                                [1,1,0,1,0,1,0,0,0,1,1,1,1],
+                                                                [1,1,0,0,0,1,0,1,1,1,1,1,1],
+                                                                [1,1,1,1,1,1,0,0,0,1,1,1,1],
+                                                                [1,1,0,0,0,1,1,1,0,1,1,1,1],
+                                                                [1,2,0,1,0,0,0,0,0,1,1,1,1],
                                                                 [1,1,1,1,1,1,1,1,1,1,1,1,1]])):
         self.size=size
         self.tile_matrix=tile_matrix
+        self.tile_size_x = 100
+        self.tile_size_y = 100
         self.walls = []
         self.targets = []
         self.spawns = []
         self.generate_map(tile_matrix)
         self.distance_map = self.generate_distance_map()
-        print(self.distance_map)
         self.max_dist = self.distance_map.flatten()[np.isfinite(self.distance_map.flatten())].max()
+
+        #self.show_distance_heatmap()
 
     #Uses a matrix to generate a map 
     def generate_map(self, tile_matrix):
         self.walls = []
-        self.tile_size_x = 100
-        self.tile_size_y = 100
 
         for y, row in enumerate(tile_matrix):
             for x, col in enumerate(row):
@@ -89,6 +90,12 @@ class Map:
         random_index = random.choice(zero_indices)
         return (random_index[1]+1/2) * self.tile_size_x, (random_index[0]+1/2) * self.tile_size_y
     
+    def check_location_validity(self, x, y): #x and y are true coords
+        if self.tile_matrix[x//self.tile_size_x][y//self.tile_size_y] == 0:
+            return True
+        else:
+            return False
+    
     #Performs BFS to generate map of integer distances from goal. AKA, number of tiles that must be crossed from
     #each tile in order to reach the closest goal. 
     def generate_distance_map(self):
@@ -121,9 +128,9 @@ class Map:
 
         return distance_map
     
-    #Gets a real valued distance from goal, using the distance map
-    def get_smoothed_distance(self, y, x): #x and y are in continous coord, get converted to int cords
-        tile_x, tile_y = x//100, y//100
+    #Gets a real valued distance from goal, using the distance map. If degree is input, determines if it is facing the correct direction
+    def get_smoothed_distance(self, y, x, angle_deg = None): #x and y are in continous coord, get converted to int cords
+        tile_x, tile_y = int(x//100), int(y//100)
         cur_distance = self.distance_map[tile_y][tile_x]
         smoothed_distance = cur_distance
 
@@ -133,11 +140,11 @@ class Map:
                     "left" : (tile_y, max(tile_x-1, 0)),
                     "right" : (tile_y, min(tile_x+1, len(self.tile_matrix[0])-1))}
 
-        #Dictionary. Key is which direction, Value is if it is the right way. Treats walls and the wrong way the same
-        direction_values = {"up" : cur_distance > self.distance_map[dir["up"][0]][dir["up"][1]],
-                      "down" : cur_distance > self.distance_map[dir["down"][0]][dir["down"][1]],
-                      "left"  : cur_distance > self.distance_map[dir["left"][0]][dir["left"][1]],
-                      "right" : cur_distance > self.distance_map[dir["right"][0]][dir["right"][1]]}
+        #Dictionary. Key is which direction, -1 indicates wrong way, 0 if wall, 1 if right way
+        direction_values = {"up" : cur_distance - self.distance_map[dir["up"][0]][dir["up"][1]] if self.tile_matrix[dir["up"][0]][dir["up"][1]] != 1 else 0,
+                      "down" : cur_distance - self.distance_map[dir["down"][0]][dir["down"][1]] if self.tile_matrix[dir["down"][0]][dir["down"][1]] != 1 else 0,
+                      "left"  : cur_distance - self.distance_map[dir["left"][0]][dir["left"][1]] if self.tile_matrix[dir["left"][0]][dir["left"][1]] != 1 else 0,
+                      "right" : cur_distance - self.distance_map[dir["right"][0]][dir["right"][1]] if self.tile_matrix[dir["right"][0]][dir["right"][1]] != 1 else 0}
         
 
         #subtract the center of current tile from the actual position. 
@@ -147,22 +154,84 @@ class Map:
         current_side_y = "up" if y_offset < 0 else "down"
         current_side_x = "left" if x_offset < 0 else "right"
 
-        if direction_values[current_side_y]: #we're on the correct vertical side
+        #case: we're on the right side
+        if direction_values[current_side_y] == 1: #we're on the correct vertical side
             smoothed_distance -= abs(y_offset)
-        else:
-            if not (direction_values["left"] and direction_values["right"]):
+        
+        #case: we're on the wrong side
+        if direction_values[current_side_y] == -1:
+            #if not (direction_values["left"] == 0 and direction_values["right"] == 0):
                 smoothed_distance += abs(y_offset)
 
-        if direction_values[current_side_x]: #we're on the correct horizontal side
+        #case: we're on the right side
+        if direction_values[current_side_x] == 1: #we're on the correct horizontal side
             smoothed_distance -= abs(x_offset)
-        else:
-            smoothed_distance += abs(x_offset)
 
+        #case: we're on the wrong side
+        if direction_values[current_side_x] == -1:
+            #case: vertical position in tile does not matter
+            #if (direction_values["up"] == 0 and direction_values["down"] == 0):
+                smoothed_distance += abs(x_offset)
+
+        # if direction_values[current_side_y] == 1 and direction_values[current_side_x] == 1:
+        #     smoothed_distance += abs(x_offset) + abs(y_offset) - math.sqrt(abs(x_offset ** 2 + y_offset ** 2))
+        if angle_deg is not None:
+            right_direction = 0
+            if angle_deg >= 45 and angle_deg < 135:
+                right_direction = direction_values["up"]
+            if angle_deg >= 135 and angle_deg < 225:
+                right_direction = direction_values["left"]
+            if angle_deg >= 225 and angle_deg < 315:
+                right_direction = direction_values["down"]
+            if angle_deg >= 315 or angle_deg < 45:
+                right_direction = direction_values["right"]
+
+
+            return smoothed_distance, right_direction
         #print(f'{cur_distance} : {smoothed_distance} - up: {direction_values["up"]}, down: {direction_values["down"]}, left: {direction_values["left"]}, right: {direction_values["right"]}')
 
-        return smoothed_distance, direction_values
+        return smoothed_distance
+    
+    #TESTING THE MAP SMOOTHING - Displays a heatmap 
+    def show_distance_heatmap(self):
+        import matplotlib.pyplot as plt
+        matrix = [[self.get_smoothed_distance(y,x) if self.tile_matrix[y//100][x//100] == 0 else -0.5 for x in range(999)] for y in range(999)]
 
+        plt.imshow(matrix, cmap='hot', interpolation='nearest')
 
+        plt.colorbar()
+
+        plt.show()
+
+    def generate_random_tilemap(self, height, width):
+        # Initialize maze with walls (1's)
+        tilemap = np.ones((height, width), dtype=np.int32)
+
+        # Function to carve paths using DFS
+        def carve_paths(x, y):
+            directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+            random.shuffle(directions)
+
+            for dx, dy in directions:
+                nx, ny = x + dx*2, y + dy*2
+                if 1 <= nx < width-1 and 1 <= ny < height-1 and tilemap[ny, nx] == 1:
+                    tilemap[ny, nx] = 0
+                    tilemap[ny-dy, nx-dx] = 0
+                    carve_paths(nx, ny)
+
+        # Start carving paths from a random cell
+        start_x, start_y = random.randrange(1, width-1, 2), random.randrange(1, height-1, 2)
+        tilemap[start_y, start_x] = 0
+        carve_paths(start_x, start_y)
+
+        # Place the special cell (2)
+        while True:
+            x, y = random.randint(1, width-2), random.randint(1, height-2)
+            if tilemap[y, x] == 0:
+                tilemap[y, x] = 2
+                break
+
+        return tilemap
 
 '''These operate as rectangular zones, including non passable walls, spawn locations, and target locations'''
 class Env_Object:
